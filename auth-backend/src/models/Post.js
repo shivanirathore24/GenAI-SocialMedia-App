@@ -48,7 +48,7 @@ const postSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // 🔥 Indexes (critical for feed performance)
@@ -56,11 +56,10 @@ postSchema.index({ userId: 1, createdAt: -1 });
 postSchema.index({ createdAt: -1 });
 
 // 🔒 Prevent empty + no-image posts
-postSchema.pre("validate", function (next) {
+postSchema.pre("validate", function () {
   if (!this.content && !this.image) {
-    return next(new Error("Post must have content or an image"));
+    throw new Error("Post must have content or image");
   }
-  next();
 });
 
 const Post = mongoose.model("Post", postSchema);
