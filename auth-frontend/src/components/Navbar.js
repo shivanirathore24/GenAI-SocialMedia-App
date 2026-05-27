@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+
 import { toast } from "react-toastify";
 
 function Navbar() {
@@ -7,28 +8,44 @@ function Navbar() {
   const token = localStorage.getItem("token");
 
   const handleLogout = () => {
-    // remove token
+    // Remove token
     localStorage.removeItem("token");
 
-    // show toast
     toast.success("Logged out successfully");
 
-    // redirect
     navigate("/login");
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-4">
-      <div className="container-fluid">
-        <span className="navbar-brand">AuthApp</span>
+    <nav className="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm px-4">
 
-        <div className="d-flex">
+      <div className="container-fluid">
+
+        {/* App Logo */}
+        <span
+          className="navbar-brand fw-bold fs-3"
+          style={{
+            cursor: "pointer",
+          }}
+          onClick={() => navigate("/")}
+        >
+          SocialMedia App 📰
+        </span>
+
+        {/* Right Side */}
+        <div className="d-flex align-items-center">
+
           {token && (
-            <button className="btn btn-outline-light" onClick={handleLogout}>
+            <button
+              className="btn btn-outline-light rounded-pill px-4"
+              onClick={handleLogout}
+            >
               Logout
             </button>
           )}
+
         </div>
+
       </div>
     </nav>
   );

@@ -45,7 +45,6 @@ function Home() {
   // Fetch Posts
   const fetchPosts = async () => {
     try {
-      // JWT token automatically sent from axios interceptor
       const res = await api.get("/api/posts");
 
       setPosts(res.data.data);
@@ -79,10 +78,10 @@ function Home() {
         content,
       });
 
-      // Add new post instantly on top
+      // Add new post instantly at top
       setPosts((prevPosts) => [res.data.data, ...prevPosts]);
 
-      // Clear textbox
+      // Clear textarea
       setContent("");
 
       // ✅ Success Toast
@@ -114,7 +113,7 @@ function Home() {
         </p>
       </div>
 
-      {/* Create Post */}
+      {/* Create Post Card */}
       <div className="card shadow border-0 rounded-4 p-4 mb-4">
         <h4 className="fw-bold mb-3">Create Post</h4>
 

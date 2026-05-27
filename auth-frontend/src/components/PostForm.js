@@ -1,15 +1,21 @@
 import { useState } from "react";
+
 import api from "../api/axios";
+
 import { toast } from "react-toastify";
 
-function CreatePost() {
+import { usePosts } from "../context/PostContext";
+
+function PostForm() {
   const [content, setContent] = useState("");
+
   const [loading, setLoading] = useState(false);
+
+  const { setPosts } = usePosts();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // prevent empty post
     if (!content.trim()) {
       return toast.error("Post cannot be empty");
     }
@@ -17,21 +23,21 @@ function CreatePost() {
     try {
       setLoading(true);
 
-      await api.post("/api/posts", {
+      const res = await api.post("/api/posts", {
         content,
       });
 
-      // clear textbox
+      // 🔥 Update Context Instantly
+      setPosts((prevPosts) => [res.data.data, ...prevPosts]);
+
+      // Clear textarea
       setContent("");
 
-      toast.success("Post created successfully");
-
+      toast.success("Post created successfully 🎉");
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to create post";
+      const message = error.response?.data?.message || "Failed to create post";
 
       toast.error(message);
-
     } finally {
       setLoading(false);
     }
@@ -42,7 +48,7 @@ function CreatePost() {
       <h4 className="fw-bold mb-3">Create Post</h4>
 
       <form onSubmit={handleSubmit}>
-        {/* Text Area */}
+        {/* Textarea */}
         <div className="mb-3">
           <textarea
             className="form-control rounded-3"
@@ -56,13 +62,11 @@ function CreatePost() {
 
         {/* Footer */}
         <div className="d-flex justify-content-between align-items-center">
-          <small className="text-muted">
-            {content.length}/280 characters
-          </small>
+          <small className="text-muted">{content.length}/280 characters</small>
 
           <button
             type="submit"
-            className="btn btn-dark px-4 rounded-pill"
+            className="btn btn-dark rounded-pill px-4"
             disabled={loading}
           >
             {loading ? "Posting..." : "Post"}
@@ -73,4 +77,4 @@ function CreatePost() {
   );
 }
 
-export default CreatePost;
+export default PostForm;

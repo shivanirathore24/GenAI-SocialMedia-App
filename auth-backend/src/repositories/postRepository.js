@@ -2,7 +2,10 @@ import Post from "../models/Post.js";
 
 // CREATE
 export const createPostRepo = async (data) => {
-  return await Post.create(data);
+  const post = await Post.create(data);
+
+  // 🔥 Return populated post
+  return await Post.findById(post._id).populate("userId", "email");
 };
 
 // GET ALL (with pagination)
@@ -22,17 +25,23 @@ export const getAllPostsRepo = async ({ page, limit }) => {
 
 // GET ONE
 export const getPostByIdRepo = async (postId) => {
-  return await Post.findOne({ _id: postId, isDeleted: false })
-    .populate("userId", "email");
+  return await Post.findOne({ _id: postId, isDeleted: false }).populate(
+    "userId",
+    "email",
+  );
 };
 
 // UPDATE
 export const updatePostRepo = async (postId, userId, updateData) => {
   return await Post.findOneAndUpdate(
-    { _id: postId, userId, isDeleted: false },
+    {
+      _id: postId,
+      userId,
+      isDeleted: false,
+    },
     updateData,
-    { new: true }
-  );
+    { new: true },
+  ).populate("userId", "email");
 };
 
 // DELETE (soft delete)
@@ -40,6 +49,6 @@ export const deletePostRepo = async (postId, userId) => {
   return await Post.findOneAndUpdate(
     { _id: postId, userId, isDeleted: false },
     { isDeleted: true },
-    { new: true }
+    { new: true },
   );
 };
