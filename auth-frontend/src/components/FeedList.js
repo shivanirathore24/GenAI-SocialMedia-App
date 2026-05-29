@@ -52,6 +52,7 @@ function FeedList() {
                   width: "45px",
                   height: "45px",
                   fontWeight: "bold",
+                  fontSize: "18px",
                 }}
               >
                 {post.userId?.email?.charAt(0).toUpperCase()}
@@ -68,16 +69,40 @@ function FeedList() {
             </div>
           </div>
 
-          {/* Post Content */}
+          {/* Content */}
           <p
-            className="mb-0 fs-6"
+            className="mb-4 fs-6"
             style={{
               whiteSpace: "pre-wrap",
-              lineHeight: "1.6",
+              lineHeight: "1.7",
             }}
           >
             {post.content}
           </p>
+
+          {/* Footer */}
+          <div className="d-flex justify-content-end align-items-center">
+            {/* Like Button */}
+            <button
+              className="btn btn-light border rounded-pill d-flex align-items-center px-3 py-2"
+              style={{
+                transition: "0.2s",
+              }}
+            >
+              {/* Heart Icon */}
+              <span
+                className="me-2"
+                style={{
+                  fontSize: "18px",
+                }}
+              >
+                ❤️
+              </span>
+
+              {/* Like Count */}
+              <span className="fw-semibold">{post.likesCount}</span>
+            </button>
+          </div>
         </div>
       ))}
     </div>
