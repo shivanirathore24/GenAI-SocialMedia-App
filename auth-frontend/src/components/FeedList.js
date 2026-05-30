@@ -9,19 +9,26 @@ import { usePosts } from "../context/PostContext";
 function FeedList() {
   const { posts, setPosts, postsLoaded, setPostsLoaded } = usePosts();
 
-  // 🔥 Download only first time
+  // Load posts only once
   useEffect(() => {
     if (postsLoaded) return;
 
     const fetchPosts = async () => {
       try {
-        const res = await api.get("/api/posts");
+        const token = localStorage.getItem("token");
+
+        const res = await api.get("/api/posts", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         setPosts(res.data.data);
 
-        // Prevent re-downloading
         setPostsLoaded(true);
       } catch (error) {
+        console.error(error);
+
         toast.error("Failed to load posts");
       }
     };
@@ -29,6 +36,72 @@ function FeedList() {
     fetchPosts();
   }, [postsLoaded, setPosts, setPostsLoaded]);
 
+  // ❤️ Like / Unlike Post
+  const handleLikeToggle = async (post) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // 💔 Unlike Post
+      if (post.currentUserLiked) {
+        await api.delete("/api/likes", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+
+          data: {
+            targetId: post._id,
+            targetType: "Post",
+          },
+        });
+
+        // Update UI instantly
+        setPosts((prevPosts) =>
+          prevPosts.map((p) =>
+            p._id === post._id
+              ? {
+                  ...p,
+                  currentUserLiked: false,
+                  likesCount: p.likesCount - 1,
+                }
+              : p,
+          ),
+        );
+      } else {
+        // ❤️ Like Post
+        await api.post(
+          "/api/likes",
+          {
+            targetId: post._id,
+            targetType: "Post",
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        // Update UI instantly
+        setPosts((prevPosts) =>
+          prevPosts.map((p) =>
+            p._id === post._id
+              ? {
+                  ...p,
+                  currentUserLiked: true,
+                  likesCount: p.likesCount + 1,
+                }
+              : p,
+          ),
+        );
+      }
+    } catch (error) {
+      console.error(error);
+
+      toast.error(error.response?.data?.message || "Failed to update like");
+    }
+  };
+
+  // Empty Feed
   if (posts.length === 0) {
     return (
       <div className="text-center text-muted mt-5">No posts available</div>
@@ -69,7 +142,7 @@ function FeedList() {
             </div>
           </div>
 
-          {/* Content */}
+          {/* Post Content */}
           <p
             className="mb-4 fs-6"
             style={{
@@ -82,10 +155,15 @@ function FeedList() {
 
           {/* Footer */}
           <div className="d-flex justify-content-end align-items-center">
-            {/* Like Button */}
+            {/* ❤️ Like Button */}
             <button
-              className="btn btn-light border rounded-pill d-flex align-items-center px-3 py-2"
+              onClick={() => handleLikeToggle(post)}
+              className="btn border rounded-pill d-flex align-items-center px-3 py-2"
               style={{
+                backgroundColor: post.currentUserLiked ? "#ffe5e5" : "#f8f9fa",
+
+                borderColor: post.currentUserLiked ? "#ffb3b3" : "#dee2e6",
+
                 transition: "0.2s",
               }}
             >
@@ -94,13 +172,22 @@ function FeedList() {
                 className="me-2"
                 style={{
                   fontSize: "18px",
+
+                  color: post.currentUserLiked ? "red" : "#6c757d",
                 }}
               >
                 ❤️
               </span>
 
-              {/* Like Count */}
-              <span className="fw-semibold">{post.likesCount}</span>
+              {/* Likes Count */}
+              <span
+                className="fw-semibold"
+                style={{
+                  color: post.currentUserLiked ? "red" : "#495057",
+                }}
+              >
+                {post.likesCount}
+              </span>
             </button>
           </div>
         </div>

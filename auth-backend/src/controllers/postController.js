@@ -1,3 +1,5 @@
+import Like from "../models/Like.js";
+
 import {
   createPostRepo,
   getAllPostsRepo,
@@ -9,58 +11,96 @@ import {
 // CREATE POST
 export const createPost = async (req, res) => {
   try {
+    const userId = req.user.id;
+
     const { content, image } = req.body;
 
+    // Validation
     if (!content && !image) {
       return res.status(400).json({
         message: "Post must have content or image",
       });
     }
 
+    // Create post
     const post = await createPostRepo({
-      userId: req.user.id,
+      userId,
       content,
       image,
     });
 
     res.status(201).json({
       message: "Post created successfully",
-      data: post,
-    });
 
+      data: {
+        ...post.toObject(),
+        currentUserLiked: false,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
 // GET ALL POSTS
 export const getAllPosts = async (req, res) => {
   try {
-    let { page = 1, limit = 10 } = req.query;
+    const page = Number(req.query.page) || 1;
 
-    page = Number(page);
-    limit = Number(limit);
+    const limit = Number(req.query.limit) || 10;
 
-    const { posts, total } = await getAllPostsRepo({ page, limit });
+    const userId = req.user.id;
 
-    res.json({
-      data: posts,
+    const { posts, total } = await getAllPostsRepo({
+      page,
+      limit,
+    });
+
+    // Add currentUserLiked
+    const updatedPosts = await Promise.all(
+      posts.map(async (post) => {
+        const existingLike = await Like.findOne({
+          userId,
+          targetId: post._id,
+          targetType: "Post",
+        });
+
+        return {
+          ...post.toObject(),
+
+          currentUserLiked: !!existingLike,
+        };
+      }),
+    );
+
+    res.status(200).json({
+      data: updatedPosts,
+
       pagination: {
         page,
         limit,
         total,
       },
     });
-
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
 // GET SINGLE POST
 export const getPostById = async (req, res) => {
   try {
-    const post = await getPostByIdRepo(req.params.id);
+    const { postId } = req.params;
+
+    const post = await getPostByIdRepo(postId);
 
     if (!post) {
       return res.status(404).json({
@@ -68,29 +108,31 @@ export const getPostById = async (req, res) => {
       });
     }
 
-    res.json({ data: post });
-
+    res.status(200).json({
+      data: post,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
 // UPDATE POST
 export const updatePost = async (req, res) => {
   try {
+    const userId = req.user.id;
+
+    const { postId } = req.params;
+
     const { content, image } = req.body;
 
-    if (!content && !image) {
-      return res.status(400).json({
-        message: "Post must have content or image",
-      });
-    }
-
-    const updatedPost = await updatePostRepo(
-      req.params.id,
-      req.user.id,
-      { content, image }
-    );
+    const updatedPost = await updatePostRepo(postId, userId, {
+      content,
+      image,
+    });
 
     if (!updatedPost) {
       return res.status(404).json({
@@ -98,23 +140,28 @@ export const updatePost = async (req, res) => {
       });
     }
 
-    res.json({
+    res.status(200).json({
       message: "Post updated successfully",
+
       data: updatedPost,
     });
-
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
 // DELETE POST
 export const deletePost = async (req, res) => {
   try {
-    const deletedPost = await deletePostRepo(
-      req.params.id,
-      req.user.id
-    );
+    const userId = req.user.id;
+
+    const { postId } = req.params;
+
+    const deletedPost = await deletePostRepo(postId, userId);
 
     if (!deletedPost) {
       return res.status(404).json({
@@ -122,11 +169,14 @@ export const deletePost = async (req, res) => {
       });
     }
 
-    res.json({
+    res.status(200).json({
       message: "Post deleted successfully",
     });
-
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 };

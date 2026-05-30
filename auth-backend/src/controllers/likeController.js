@@ -11,37 +11,33 @@ export const addLike = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { targetId, targetType } = req.body;
+    const { postId } = req.body;
 
     // Validation
-    if (!targetId || !targetType) {
+    if (!postId) {
       return res.status(400).json({
-        message: "Target ID and target type are required",
+        message: "Post ID is required",
       });
     }
 
-    // Check existing like
-    const existingLike = await findLikeRepo(userId, targetId, targetType);
+    // Already liked?
+    const existingLike = await findLikeRepo(userId, postId, "Post");
 
     if (existingLike) {
       return res.status(400).json({
-        message: "Already liked",
+        message: "Post already liked",
       });
     }
 
     // Create Like
-    await createLikeRepo(userId, targetId, targetType);
+    await createLikeRepo(userId, postId, "Post");
 
-    let updatedTarget = null;
-
-    // Increment likes count
-    if (targetType === "Post") {
-      updatedTarget = await incrementPostLikesRepo(targetId);
-    }
+    // Increment count
+    const updatedPost = await incrementPostLikesRepo(postId);
 
     res.status(201).json({
       message: "Liked successfully",
-      data: updatedTarget,
+      data: updatedPost,
     });
   } catch (error) {
     console.error(error);
@@ -57,37 +53,33 @@ export const removeLike = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { targetId, targetType } = req.body;
+    const { postId } = req.body;
 
     // Validation
-    if (!targetId || !targetType) {
+    if (!postId) {
       return res.status(400).json({
-        message: "Target ID and target type are required",
+        message: "Post ID is required",
       });
     }
 
-    // Check existing like
-    const existingLike = await findLikeRepo(userId, targetId, targetType);
+    // Like exists?
+    const existingLike = await findLikeRepo(userId, postId, "Post");
 
     if (!existingLike) {
       return res.status(400).json({
-        message: "Like does not exist",
+        message: "Post not liked yet",
       });
     }
 
     // Remove Like
-    await removeLikeRepo(userId, targetId, targetType);
+    await removeLikeRepo(userId, postId, "Post");
 
-    let updatedTarget = null;
-
-    // Decrement likes count
-    if (targetType === "Post") {
-      updatedTarget = await decrementPostLikesRepo(targetId);
-    }
+    // Decrement count
+    const updatedPost = await decrementPostLikesRepo(postId);
 
     res.status(200).json({
       message: "Like removed successfully",
-      data: updatedTarget,
+      data: updatedPost,
     });
   } catch (error) {
     console.error(error);

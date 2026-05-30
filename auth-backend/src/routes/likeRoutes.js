@@ -6,10 +6,10 @@ import { addLike, removeLike } from "../controllers/likeController.js";
 
 const router = express.Router();
 
-// Add Like
+// ❤️ Like Post
 router.post("/", authMiddleware, addLike);
 
-// Remove Likel̥
+// 💔 Unlike Post
 router.delete("/", authMiddleware, removeLike);
 
 export default router;
