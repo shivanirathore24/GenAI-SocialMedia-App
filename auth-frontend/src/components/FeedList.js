@@ -7,14 +7,43 @@ import { toast } from "react-toastify";
 import { usePosts } from "../context/PostContext";
 
 function FeedList() {
-  const { posts, setPosts, postsLoaded, setPostsLoaded } = usePosts();
+  const { posts, setPosts } = usePosts();
 
-  // Load posts only once
+  // Cache keys
+  const CACHE_KEY = "socialmedia_posts_cache";
+
+  const CACHE_TIME_KEY = "socialmedia_posts_cache_time";
+
+  // 10 minutes
+  const CACHE_DURATION = 10 * 60 * 1000;
+
+  // Load Posts
   useEffect(() => {
-    if (postsLoaded) return;
-
-    const fetchPosts = async () => {
+    const loadPosts = async () => {
       try {
+        const now = Date.now();
+
+        // Get cache
+        const cachedPosts = localStorage.getItem(CACHE_KEY);
+
+        const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+
+        // Valid cache exists
+        if (
+          cachedPosts &&
+          cachedTime &&
+          now - Number(cachedTime) < CACHE_DURATION
+        ) {
+          console.log("Using cached posts");
+
+          setPosts(JSON.parse(cachedPosts));
+
+          return;
+        }
+
+        console.log("Fetching fresh posts");
+
+        // Fetch fresh posts
         const token = localStorage.getItem("token");
 
         const res = await api.get("/api/posts", {
@@ -23,9 +52,15 @@ function FeedList() {
           },
         });
 
-        setPosts(res.data.data);
+        const fetchedPosts = res.data.data;
 
-        setPostsLoaded(true);
+        // Update state
+        setPosts(fetchedPosts);
+
+        // Save cache
+        localStorage.setItem(CACHE_KEY, JSON.stringify(fetchedPosts));
+
+        localStorage.setItem(CACHE_TIME_KEY, now.toString());
       } catch (error) {
         console.error(error);
 
@@ -33,45 +68,49 @@ function FeedList() {
       }
     };
 
-    fetchPosts();
-  }, [postsLoaded, setPosts, setPostsLoaded]);
+    loadPosts();
+  }, [setPosts]);
 
-  // ❤️ Like / Unlike Post
+  // Update cache helper
+  const updateCache = (updatedPosts) => {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(updatedPosts));
+
+    localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+  };
+
+  // ❤️ Like / Unlike
   const handleLikeToggle = async (post) => {
     try {
       const token = localStorage.getItem("token");
 
-      // 💔 Unlike Post
+      let updatedPost = null;
+
+      // 💔 Unlike
       if (post.currentUserLiked) {
-        await api.delete("/api/likes", {
+        const res = await api.delete("/api/likes", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
 
           data: {
             targetId: post._id,
+
             targetType: "Post",
           },
         });
 
-        // Update UI instantly
-        setPosts((prevPosts) =>
-          prevPosts.map((p) =>
-            p._id === post._id
-              ? {
-                  ...p,
-                  currentUserLiked: false,
-                  likesCount: p.likesCount - 1,
-                }
-              : p,
-          ),
-        );
+        updatedPost = {
+          ...res.data.data,
+
+          currentUserLiked: false,
+        };
       } else {
-        // ❤️ Like Post
-        await api.post(
+        // ❤️ Like
+        const res = await api.post(
           "/api/likes",
           {
             targetId: post._id,
+
             targetType: "Post",
           },
           {
@@ -81,19 +120,22 @@ function FeedList() {
           },
         );
 
-        // Update UI instantly
-        setPosts((prevPosts) =>
-          prevPosts.map((p) =>
-            p._id === post._id
-              ? {
-                  ...p,
-                  currentUserLiked: true,
-                  likesCount: p.likesCount + 1,
-                }
-              : p,
-          ),
-        );
+        updatedPost = {
+          ...res.data.data,
+
+          currentUserLiked: true,
+        };
       }
+
+      // Update state
+      const updatedPosts = posts.map((p) =>
+        p._id === post._id ? updatedPost : p,
+      );
+
+      setPosts(updatedPosts);
+
+      // Update cache
+      updateCache(updatedPosts);
     } catch (error) {
       console.error(error);
 
@@ -101,7 +143,7 @@ function FeedList() {
     }
   };
 
-  // Empty Feed
+  // Empty feed
   if (posts.length === 0) {
     return (
       <div className="text-center text-muted mt-5">No posts available</div>
@@ -147,6 +189,7 @@ function FeedList() {
             className="mb-4 fs-6"
             style={{
               whiteSpace: "pre-wrap",
+
               lineHeight: "1.7",
             }}
           >
@@ -167,7 +210,7 @@ function FeedList() {
                 transition: "0.2s",
               }}
             >
-              {/* Heart Icon */}
+              {/* Heart */}
               <span
                 className="me-2"
                 style={{

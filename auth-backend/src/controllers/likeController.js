@@ -11,29 +11,29 @@ export const addLike = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { postId } = req.body;
+    const { targetId, targetType } = req.body;
 
     // Validation
-    if (!postId) {
+    if (!targetId || !targetType) {
       return res.status(400).json({
-        message: "Post ID is required",
+        message: "Target ID and target type are required",
       });
     }
 
     // Already liked?
-    const existingLike = await findLikeRepo(userId, postId, "Post");
+    const existingLike = await findLikeRepo(userId, targetId, targetType);
 
     if (existingLike) {
       return res.status(400).json({
-        message: "Post already liked",
+        message: "Already liked",
       });
     }
 
     // Create Like
-    await createLikeRepo(userId, postId, "Post");
+    await createLikeRepo(userId, targetId, targetType);
 
-    // Increment count
-    const updatedPost = await incrementPostLikesRepo(postId);
+    // Increment likes
+    const updatedPost = await incrementPostLikesRepo(targetId);
 
     res.status(201).json({
       message: "Liked successfully",
@@ -53,32 +53,33 @@ export const removeLike = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { postId } = req.body;
+    const { targetId, targetType } = req.body;
 
     // Validation
-    if (!postId) {
+    if (!targetId || !targetType) {
       return res.status(400).json({
-        message: "Post ID is required",
+        message: "Target ID and target type are required",
       });
     }
 
-    // Like exists?
-    const existingLike = await findLikeRepo(userId, postId, "Post");
+    // Check existing like
+    const existingLike = await findLikeRepo(userId, targetId, targetType);
 
     if (!existingLike) {
       return res.status(400).json({
-        message: "Post not liked yet",
+        message: "Like does not exist",
       });
     }
 
     // Remove Like
-    await removeLikeRepo(userId, postId, "Post");
+    await removeLikeRepo(userId, targetId, targetType);
 
-    // Decrement count
-    const updatedPost = await decrementPostLikesRepo(postId);
+    // Decrement likes
+    const updatedPost = await decrementPostLikesRepo(targetId);
 
     res.status(200).json({
       message: "Like removed successfully",
+
       data: updatedPost,
     });
   } catch (error) {
