@@ -17,7 +17,7 @@ dotenv.config();
 const seedDatabase = async () => {
   try {
     // Connect MongoDB
-    await mongoose.connect(process.env.MONGO_URI_DEV);
+    await mongoose.connect(process.env.MONGO_URI_PROD);
 
     console.log("MongoDB Connected");
 
