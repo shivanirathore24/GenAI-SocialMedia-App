@@ -18,14 +18,11 @@ const followSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // 🔥 Prevent duplicate follows
-followSchema.index(
-  { followerId: 1, followingId: 1 },
-  { unique: true }
-);
+followSchema.index({ followerId: 1, followingId: 1 }, { unique: true });
 
 // 🔒 Prevent self-follow
 followSchema.pre("save", function (next) {
@@ -57,4 +54,4 @@ followSchema.pre("save", async function (next) {
 
 const Follow = mongoose.model("Follow", followSchema);
 
-export default Follow;l̥
+export default Follow;
